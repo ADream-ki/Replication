@@ -1,0 +1,86 @@
+hydra:
+  run:
+    # dynamic output directory according to running time and override name
+    dir: outputs_geofno/${now:%Y-%m-%d}/${now:%H-%M-%S}/${hydra.job.override_dirname}
+  job:
+    name: ${mode} # name of logfile
+    chdir: false # keep current working directory unchanged
+    config:
+      override_dirname:
+        exclude_keys:
+          - TRAIN.checkpoint_path
+          - TRAIN.pretrained_model_path
+          - EVAL.pretrained_model_path
+          - mode
+          - output_dir
+          - log_freq
+  callbacks:
+    init_callback:
+      _target_: ppsci.utils.callbacks.InitCallback
+  sweep:
+    # output directory for multirun
+    dir: ${geofno.run.dir}
+    subdir: ./
+
+# general settings
+mode: train # running mode: train/eval
+seed: 42
+output_dir: ${geofno:run.dir}
+log_freq: 100
+
+N_s: 2001
+L_x: 500
+
+VIV_DATA_PATH: "./VIV_Training_Neta100.mat"
+
+# model settings
+MODEL:
+  input_keys: ["x", "y"]
+  output_keys: ["pred"]
+  modes: 64
+  width: 64
+  padding: 100
+  input_channel: 2
+  output_np: 2001
+
+# set training data path
+TRAIN_DATA_DIR: "./data/training"
+TRAIN_X_MESH_GRAPH_PATH: "./data/training/x_1d_structured_mesh.npy"
+TRAIN_Y_MESH_GRAPH_PATH: "./data/training/y_1d_structured_mesh.npy"
+TRAIN_para_PATH: "./data/training/data_info.npy"
+TRAIN_OUTPUT_PATH: "./data/training/density_1d_data.npy"
+s: 2001
+
+# set test data path
+TEST_DATA_DIR: "./data/test"
+TEST_X_MESH_GRAPH_PATH: "./data/test/x_1d_structured_mesh.npy"
+TEST_Y_MESH_GRAPH_PATH: "./data/test/y_1d_structured_mesh.npy"
+TEST_para_PATH: "./data/test/data_info.npy"
+TEST_OUTPUT_PATH: "./data/test/density_1d_data.npy"
+
+# training settings
+TRAIN:
+  epochs: 1
+  iters_per_epoch: 1
+  ntrain: 1000
+  ntest: 100
+
+  save_freq: 100
+  eval_during_train: true
+  eval_freq: 20
+  batch_size: 20
+  lr_scheduler:
+    epochs: ${TRAIN.epochs}
+    iters_per_epoch: ${TRAIN.iters_per_epoch}
+    learning_rate: 0.001
+    step_size: 1
+    gamma: 0.5
+    weight_decay: 0.0001
+  pretrained_model_path: null
+  checkpoint_path: null
+
+# evaluation settings
+EVAL:
+  batch_size: 1
+  pretrained_model_path: null
+  eval_with_no_grad: true
